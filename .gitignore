@@ -1,0 +1,11 @@
+# 本機 Claude Code 設定 (機器專屬, 勿上傳)
+.claude/
+
+# 帳號設定 / 覆蓋檔 (可能含本機路徑)
+quota-accounts.json
+quota-accounts.override.json
+
+# 備份 / 暫存
+*.bak
+*.bak-*
+*.tmp
