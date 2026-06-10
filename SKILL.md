@@ -1,6 +1,6 @@
 ---
 name: claude-quota
-description: "Windows 版 Claude 多帳號額度管理。查所有帳號剩餘額度、切換帳號、持續監測儀表板、設定多帳號環境。當使用者說「cq」「額度」「quota」「剩多少」「帳號額度」「換帳號」「切帳號」「switch account」「設定多帳號」「setup multi account」「哪個帳號最空」「監測帳號」「watch quota」時觸發。適用 Claude Pro / Max / Team 帳號，在 Windows + PowerShell 環境執行。"
+description: "Windows 版 Claude 多帳號額度管理。查所有帳號剩餘額度、切換帳號、持續監測儀表板、用量估值(ccusage 風格)、設定多帳號環境。當使用者說「cq」「額度」「quota」「剩多少」「帳號額度」「換帳號」「切帳號」「switch account」「設定多帳號」「setup multi account」「哪個帳號最空」「監測帳號」「watch quota」「cu」「用量」「花多少」「估值」「ccusage」「各模型用量」時觸發。適用 Claude Pro / Max / Team 帳號，在 Windows + PowerShell 環境執行。"
 ---
 
 # claude-quota (Windows)
@@ -35,6 +35,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ~\.claude\skills\claude-quot
 powershell -NoProfile -ExecutionPolicy Bypass -File ~\.claude\skills\claude-quota\check-quota.ps1 -Watch -Interval 60
 ```
 每 60 秒自動刷新、原地更新畫面，Ctrl+C 結束。間隔可調 `-Interval 30`。
+
+### 使用者說「用量」「花多少」「估值」「cu」「ccusage」 → 用量估值
+```powershell
+python ~\.claude\skills\claude-quota\ccusage.py --by-account
+```
+讀各帳號對話 log（projects/**/*.jsonl）的真實 token 數 × API 單價，估算各模型「等值美元」。
+`--days N` 限近 N 天。提醒使用者：訂閱是月費吃到飽，此為「照 API 計費的等值」估算，不是實際扣款。
+拿到輸出後列成表格（模型 / 輸入 / 輸出 / 估值）給使用者看，並指出花最多的模型與帳號。
 
 ### 使用者說「換帳號」「切帳號」 → 說明切換方式
 切換靠 `$PROFILE` 裡的函式：`c1`=主帳號、`c2`=`.claude2`、`c3`=`.claude3`…

@@ -22,4 +22,6 @@ function c5 { Use-ClaudeAccount "$HOME\.claude5" @args }
 function cq { powershell -NoProfile -ExecutionPolicy Bypass -File $ClaudeQuotaScript }
 # 持續監測所有帳號 (儀表板, 預設每 60 秒刷新; cqw 30 改間隔)
 function cqw { param([int]$Interval = 60) powershell -NoProfile -ExecutionPolicy Bypass -File $ClaudeQuotaScript -Watch -Interval $Interval }
+# 用量估值 (ccusage 風格, 讀對話 log 算各模型等值美元; 需 python)
+function cu { python "$HOME\.claude\skills\claude-quota\ccusage.py" @args }
 # ===== Claude 多帳號管理 結束 =====

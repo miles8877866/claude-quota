@@ -16,6 +16,7 @@ This is a Windows port of the [original macOS version](#differences-from-the-mac
 |---------|--------------|
 | `cq` | List every account's weekly / 5h quota at once; recommends the emptiest account |
 | `cqw` | Dashboard mode, auto-refresh every 60s (`cqw 30` to change interval, Ctrl+C to quit) |
+| `cu` | Usage valuation (ccusage-style): reads conversation logs, estimates per-model "API-equivalent USD" (needs python) |
 | `claude1`~`claude9` | Launch Claude with account N |
 | `cc <n>` | Use account N (unlimited, e.g. `cc 10`, `cc 25`) |
 
@@ -72,6 +73,24 @@ Claude 帳號額度  離峰 x2  @14:51:16
 ```
 
 > 🟢 0–30% (green)　🟡 31–69% (yellow)　🔴 70%+ (red) — the bar color reflects usage in real time.
+
+**Usage valuation** (`cu`, ccusage-style — reads conversation logs, estimates per-model "API-equivalent USD"):
+
+```console
+PS C:\> cu --by-account
+
+Claude Code 用量估值  全部歷史 · API 等值估算
+────────────────────────────────────────────────────────────────
+  model              input     output   cache-rd        value
+────────────────────────────────────────────────────────────────
+  sonnet        17.6K     3.3M   669.9M     $319.37
+  opus          40.4K   431.2K    46.3M      $42.55
+  haiku         25.1K    38.0K     3.9M       $1.32
+────────────────────────────────────────────────────────────────
+  total                                      $363.24
+```
+
+> Subscriptions are flat-fee, so this figure is an "if billed at API rates" estimate — useful for comparing usage across accounts/models. `cu --days 7` limits to the last 7 days; `cu --by-account` breaks it down per account.
 
 **Live dashboard** (`cqw`, auto-refreshes every 60s in place, Ctrl+C to quit):
 
@@ -217,10 +236,11 @@ claude-quota/
 ├── SKILL.md             # Claude Code skill definition (triggers + instructions)
 ├── install.ps1          # one-click deploy
 ├── check-quota.ps1      # quota check / live monitor (core)
+├── ccusage.py           # usage valuation (reads logs, per-model USD estimate)
 ├── setup-account.ps1    # create dir + log in an account (PowerShell)
 ├── profile-snippet.ps1  # PowerShell switch functions (paste into $PROFILE)
 ├── bin/                 # cmd launchers
-│   ├── cq.bat / cqw.bat / cc.bat
+│   ├── cq.bat / cqw.bat / cu.bat / cc.bat
 │   └── claude1.bat ~ claude9.bat
 └── check-quota.sh       # original macOS version (reference)
 ```

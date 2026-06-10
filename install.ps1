@@ -16,7 +16,7 @@ Write-Host "claude-quota 部署中..." -ForegroundColor Cyan
 
 # 1) 安裝 skill
 New-Item -ItemType Directory -Path $skillDst -Force | Out-Null
-foreach ($f in 'SKILL.md','README.md','check-quota.ps1','setup-account.ps1','profile-snippet.ps1') {
+foreach ($f in 'SKILL.md','README.md','check-quota.ps1','setup-account.ps1','profile-snippet.ps1','ccusage.py') {
     if (Test-Path "$here\$f") { Copy-Item "$here\$f" "$skillDst\$f" -Force }
 }
 Write-Host "  [1/3] skill -> $skillDst" -ForegroundColor Green
@@ -40,5 +40,6 @@ Write-Host ""
 Write-Host "完成! 請『重開』終端機 (cmd 或 PowerShell), 然後:" -ForegroundColor Cyan
 Write-Host "  claude1   登入第 1 個帳號 (/login -> /exit), claude2/claude3... 換帳號" -ForegroundColor White
 Write-Host "  cc 10     第 10 個以上的帳號 (不限數量)" -ForegroundColor White
-Write-Host "  cq        查所有帳號額度" -ForegroundColor White
+Write-Host "  cq        查所有帳號額度 (剩餘量)" -ForegroundColor White
 Write-Host "  cqw       持續監測儀表板" -ForegroundColor White
+Write-Host "  cu        用量估值 (ccusage 風格, 各模型等值美元; 需 python)" -ForegroundColor White
