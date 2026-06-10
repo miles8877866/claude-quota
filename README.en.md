@@ -215,6 +215,25 @@ The two "monitors" read different sources and behave very differently under rate
 - **`cqw` (quota dashboard) calls the API**, whose endpoint is strictly rate-limited. To keep it usable as a live dashboard it uses **round-robin**: each tick refreshes only the single oldest account (1 API call/tick) and shows the rest from cache — so it never trips the limit. It also has cache + 429 backoff, and on throttling shows last-known values ("限流→快取") instead of erroring.
 - The original macOS version had no continuous monitor — `cq` was run manually, so it never hit the limit. Watch mode is new here.
 
+## Privacy & data scope
+
+**Everything runs locally; your account data is never leaked.**
+
+- **Only outbound connection**: `cu` occasionally downloads a **public LiteLLM price table** from GitHub (a one-way price fetch). It **uploads nothing** — no account, token, usage, or conversation content. `cq` only calls Anthropic's official usage API.
+- **Output has no secrets**: only local directory labels (`claude1`…) and numbers — **no tokens, keys, emails, or conversation content**.
+- **The repo contains no personal data**: only code. Your logs, credentials, and price cache live under `~/.claude/` (gitignored) and never enter the repo. Cloning gives others the tool, not your accounts.
+- Anyone who installs it sees only **their own** machine's accounts — the tool is generic.
+
+### cu vs cq cover different data (important)
+
+| | Source | Scope |
+|---|---|---|
+| **cu** (usage value) | local log files | **only what ran on this computer** |
+| **cq** (remaining quota %) | Anthropic servers | **the whole account, all devices combined** |
+
+- Same account used on several machines: `cu` on one machine sees only that machine's usage; `cq` reflects the account's true total across devices.
+- Claude Code periodically prunes old local logs; pruned records won't be counted by `cu` (very old usage may be undercounted).
+
 ## Differences from the macOS version
 
 | Aspect | macOS | Windows |
