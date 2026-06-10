@@ -32,6 +32,57 @@ Claude 帳號額度  離峰 x2  @14:51:16
 
 ---
 
+## Demo
+
+**One-command account switching** (jump from account 1 to 5 — one command per account, no login/logout):
+
+```console
+PS C:\> claude1          # ← open Claude as account 1
+  ╭─────────────────────────────────────────────╮
+  │  Claude Code   ·   account: claude1 (vm1@…)  │
+  ╰─────────────────────────────────────────────╯
+  > /exit
+
+PS C:\> claude2          # ← instantly switch to account 2
+  ╭─────────────────────────────────────────────╮
+  │  Claude Code   ·   account: claude2 (alt2@…) │
+  ╰─────────────────────────────────────────────╯
+
+PS C:\> claude3          # ← account 3
+PS C:\> claude4          # ← account 4
+PS C:\> claude5          # ← account 5
+PS C:\> cc 12            # ← account 6+ : cc takes any number
+```
+
+**See every account's quota at a glance** (`cq`):
+
+```console
+PS C:\> cq
+
+Claude 帳號額度  離峰 x2  @14:51:16
+────────────────────────────────────────────────────────
+  claude1      ████████░░░░░░░░░░░░  week: 38%  5h: 12%
+  claude2      ██░░░░░░░░░░░░░░░░░░  week:  9%  5h:  0%
+  claude3      ██████████████░░░░░░  week: 71%  5h: 55%
+  claude4      █████░░░░░░░░░░░░░░░░  week: 25%  5h:  8%
+  claude5      ██████████████████░░  week: 92%  5h: 80%
+────────────────────────────────────────────────────────
+  weekly reset: 06/12 02:00 (local)
+  -> emptiest: claude2 (week 9%)     ← best account for your next session
+```
+
+> 🟢 0–30% (green)　🟡 31–69% (yellow)　🔴 70%+ (red) — the bar color reflects usage in real time.
+
+**Live dashboard** (`cqw`, auto-refreshes every 60s in place, Ctrl+C to quit):
+
+```console
+PS C:\> cqw
+# same table, re-queried every 60s; the @HH:MM:SS timestamp ticks
+  refreshing every 60s, Ctrl+C to quit
+```
+
+---
+
 ## Quick install (one command)
 
 Clone/download this repo, then from the project folder run:
