@@ -62,8 +62,24 @@ def main():
     ap.add_argument('--days', type=int, default=0, help='只算最近 N 天 (0=全部)')
     ap.add_argument('--by-account', action='store_true', help='列出每帳號明細')
     ap.add_argument('--dir', default=None, help='只掃指定設定目錄')
+    ap.add_argument('--watch', action='store_true', help='持續監控 (讀本機 log, 無 API 限流)')
+    ap.add_argument('--interval', type=int, default=30, help='watch 刷新秒數 (預設 30)')
     args = ap.parse_args()
 
+    if args.watch:
+        import time
+        while True:
+            os.system('cls' if os.name == 'nt' else 'clear')
+            run_once(args)
+            print(f"  {DIM}每 {args.interval} 秒刷新 (讀本機 log, 無 API 限流), Ctrl+C 結束{RST}")
+            try:
+                time.sleep(args.interval)
+            except KeyboardInterrupt:
+                break
+    else:
+        run_once(args)
+
+def run_once(args):
     home = os.path.expanduser('~')
     if args.dir:
         roots = [args.dir]

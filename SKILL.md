@@ -31,10 +31,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ~\.claude\skills\claude-quot
 若某帳號顯示「token 已過期」，告訴使用者啟動一次該帳號（例：`c2` 進去再退出）讓 Claude Code 自動刷新 token，下次就查得到。
 
 ### 使用者說「監測」「watch」「持續看」 → 儀表板模式
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ~\.claude\skills\claude-quota\check-quota.ps1 -Watch -Interval 60
-```
-每 60 秒自動刷新、原地更新畫面，Ctrl+C 結束。間隔可調 `-Interval 30`。
+**先分清楚要監控什麼**：
+- **持續監控「用量」(token/估值)** → 用 `cu --watch`（讀本機 log，無 API 限流，可高頻刷新）：
+  ```powershell
+  python ~\.claude\skills\claude-quota\ccusage.py --watch --interval 30
+  ```
+- **持續監控「剩餘額度 %」** → `cqw` / `-Watch`（打額度 API）：
+  ```powershell
+  powershell -NoProfile -ExecutionPolicy Bypass -File ~\.claude\skills\claude-quota\check-quota.ps1 -Watch
+  ```
+  額度 API 限流嚴格，故此模式用**輪詢制**：每 tick 只查 1 個帳號(最舊的)，其餘讀快取，不會被限流。預設 15 秒/tick。
+
+提醒：額度 API 不能高頻輪詢；要「持續監控用量」優先建議 `cu --watch`（本機、無限流）。
 
 ### 使用者說「用量」「花多少」「估值」「cu」「ccusage」 → 用量估值
 ```powershell

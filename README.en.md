@@ -17,6 +17,7 @@ This is a Windows port of the [original macOS version](#differences-from-the-mac
 | `cq` | List every account's weekly / 5h quota at once; recommends the emptiest account |
 | `cqw` | Dashboard mode, auto-refresh every 60s (`cqw 30` to change interval, Ctrl+C to quit) |
 | `cu` | Usage valuation (ccusage-style): reads conversation logs, estimates per-model "API-equivalent USD" (needs python) |
+| `cu --watch` | **Continuous usage monitoring**: reads local logs, no API rate limit, refresh as fast as you like |
 | `claude1`~`claude9` | Launch Claude with account N |
 | `cc <n>` | Use account N (unlimited, e.g. `cc 10`, `cc 25`) |
 
@@ -200,6 +201,19 @@ A `.ps1` containing Chinese, saved as UTF-8 **without BOM**, is misread by Power
 Detection uses the regex `^\.claude(\d+|-max-.+)$` to scan all account directories — no upper bound. Labels come straight from the directory name (`.claude2` → `claude2`), matching the switch commands.
 
 ---
+
+## Which monitor should I use? (important)
+
+The two "monitors" read different sources and behave very differently under rate limits:
+
+| | Source | Rate limit | Best for |
+|---|---|---|---|
+| `cq` / `cqw` (quota %) | Anthropic usage API | **Yes, strict** | Occasional remaining-quota checks |
+| `cu --watch` (usage value) | local conversation logs | **None** | Continuous usage monitoring |
+
+- **Want continuous usage monitoring → `cu --watch`**: reads local logs, never calls the API, refresh as fast as you like.
+- **`cqw` (quota dashboard) calls the API**, whose endpoint is strictly rate-limited. To keep it usable as a live dashboard it uses **round-robin**: each tick refreshes only the single oldest account (1 API call/tick) and shows the rest from cache — so it never trips the limit. It also has cache + 429 backoff, and on throttling shows last-known values ("限流→快取") instead of erroring.
+- The original macOS version had no continuous monitor — `cq` was run manually, so it never hit the limit. Watch mode is new here.
 
 ## Differences from the macOS version
 
