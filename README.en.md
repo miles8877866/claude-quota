@@ -204,6 +204,7 @@ Detection uses the regex `^\.claude(\d+|-max-.+)$` to scan all account directori
 | "no logged-in account found" | Log in first via `claudeN` → `/login` |
 | `cq` / `claude6` not recognized | PATH changes only apply to *newly opened* windows — reopen the terminal |
 | Execution policy blocks it | `.bat` already passes `-ExecutionPolicy Bypass`; or run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
+| Logged in, but `cq` doesn't find an account | The account dir name has a **trailing space** (e.g. `.claude1 `). Windows strips trailing spaces from path components, so PowerShell can't read it. Copy that dir's `.credentials.json` into the space-free dir; from then on only switch with `claudeN` / `cc <n>` and never `set CLAUDE_CONFIG_DIR=...\.claudeN ` with a trailing space |
 
 ---
 
