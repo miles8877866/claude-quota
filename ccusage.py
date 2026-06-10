@@ -24,17 +24,83 @@ try:
 except Exception:
     pass
 
-# --- API 定價 (USD / 每百萬 token) ---
-# 來源: Anthropic 官方 API 定價 (寫死的靜態表; 官方改價需手動更新此處)。
-# 快取倍率: 寫入(cache_creation)=輸入x1.25, 讀取(cache_read)=輸入x0.1
-PRICING = {
-    'opus':   {'in': 5.0,  'out': 25.0},
-    'sonnet': {'in': 3.0,  'out': 15.0},
-    'haiku':  {'in': 1.0,  'out': 5.0},
-    'fable':  {'in': 10.0, 'out': 50.0},
+# --- API 定價 (USD / 每百萬 token: in 輸入, out 輸出, cr 快取讀, cw 快取寫) ---
+# 預設偶爾抓線上 LiteLLM 價格庫 (快取 7 天); 抓不到才用下面這張寫死的後備表。
+PRICING_FALLBACK = {
+    'opus':   {'in': 5.0,  'out': 25.0, 'cr': 0.50, 'cw': 6.25},
+    'sonnet': {'in': 3.0,  'out': 15.0, 'cr': 0.30, 'cw': 3.75},
+    'haiku':  {'in': 1.0,  'out': 5.0,  'cr': 0.10, 'cw': 1.25},
+    'fable':  {'in': 10.0, 'out': 50.0, 'cr': 1.00, 'cw': 12.5},
 }
-CACHE_WRITE_MULT = 1.25
-CACHE_READ_MULT  = 0.10
+PRICING = dict(PRICING_FALLBACK)   # 由 load_pricing() 覆蓋
+PRICE_SOURCE = '後備表'
+
+LITELLM_URL = 'https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json'
+PRICE_CACHE = os.path.join(os.path.expanduser('~'), '.claude', '.litellm-prices.json')
+PRICE_TTL = 7 * 86400   # 7 天才重抓一次
+# 各 tier 的代表 model key (新→舊, 取第一個抓得到的)
+TIER_KEYS = {
+    'opus':   ['claude-opus-4-8', 'claude-opus-4-7', 'claude-opus-4-6', 'claude-opus-4-5'],
+    'sonnet': ['claude-sonnet-4-6', 'claude-sonnet-4-5'],
+    'haiku':  ['claude-haiku-4-5'],
+    'fable':  ['claude-fable-5'],
+}
+
+def load_pricing(force=False):
+    """偶爾抓 LiteLLM 線上價格 (快取 7 天)。失敗則用快取/後備表。設定全域 PRICING/PRICE_SOURCE。"""
+    global PRICING, PRICE_SOURCE
+    import time
+    # 1) 快取夠新就直接用
+    if not force and os.path.isfile(PRICE_CACHE):
+        try:
+            c = json.load(open(PRICE_CACHE, encoding='utf-8'))
+            if time.time() - c.get('fetched_at', 0) < PRICE_TTL and c.get('pricing'):
+                PRICING = {k: v for k, v in c['pricing'].items()}
+                PRICE_SOURCE = f"線上@{c.get('date', '?')}(快取)"
+                return
+        except Exception:
+            pass
+    # 2) 抓線上
+    try:
+        import urllib.request
+        raw = urllib.request.urlopen(LITELLM_URL, timeout=20).read()
+        db = json.loads(raw)
+        new = {}
+        for tier, keys in TIER_KEYS.items():
+            for k in keys:
+                e = db.get(k)
+                if e and e.get('input_cost_per_token'):
+                    new[tier] = {
+                        'in': e['input_cost_per_token'] * 1e6,
+                        'out': e.get('output_cost_per_token', 0) * 1e6,
+                        'cr': (e.get('cache_read_input_token_cost') or e['input_cost_per_token'] * 0.1) * 1e6,
+                        'cw': (e.get('cache_creation_input_token_cost') or e['input_cost_per_token'] * 1.25) * 1e6,
+                    }
+                    break
+            if tier not in new:
+                new[tier] = dict(PRICING_FALLBACK[tier])   # 該 tier 抓不到就用後備
+        date = datetime.now().astimezone().strftime('%Y-%m-%d')
+        PRICING = new
+        PRICE_SOURCE = f"線上@{date}"
+        try:
+            os.makedirs(os.path.dirname(PRICE_CACHE), exist_ok=True)
+            json.dump({'fetched_at': time.time(), 'date': date, 'pricing': new},
+                      open(PRICE_CACHE, 'w', encoding='utf-8'))
+        except Exception:
+            pass
+    except Exception:
+        # 3) 抓不到: 有舊快取就用舊的, 否則後備表
+        if os.path.isfile(PRICE_CACHE):
+            try:
+                c = json.load(open(PRICE_CACHE, encoding='utf-8'))
+                if c.get('pricing'):
+                    PRICING = {k: v for k, v in c['pricing'].items()}
+                    PRICE_SOURCE = f"線上@{c.get('date', '?')}(舊快取/離線)"
+                    return
+            except Exception:
+                pass
+        PRICING = dict(PRICING_FALLBACK)
+        PRICE_SOURCE = '後備表(離線)'
 
 G='\033[32m'; Y='\033[33m'; C='\033[36m'; DIM='\033[2m'; BOLD='\033[1m'; RST='\033[0m'
 
@@ -48,7 +114,7 @@ def tier(model):
 def cost(t, rec):
     inp, out, cw, cr = rec
     p = PRICING[t]
-    return ((inp + cw*CACHE_WRITE_MULT + cr*CACHE_READ_MULT) / 1e6) * p['in'] + (out / 1e6) * p['out']
+    return (inp*p['in'] + out*p['out'] + cw*p['cw'] + cr*p['cr']) / 1e6
 
 def fmt_usd(x): return f"${x:,.2f}"
 def fmt_tok(n):
@@ -195,7 +261,7 @@ def run_once(args):
 def _footer(skipped):
     if skipped:
         print(f"  {DIM}略過未知模型: {', '.join(sorted(skipped))}{RST}")
-    print(f"  {DIM}* 訂閱為月費吃到飽; 此為「照 API 計費的等值」估算, 含快取倍率近似{RST}")
+    print(f"  {DIM}* 訂閱為月費吃到飽; 此為「照 API 計費的等值」估算 · 定價來源: {PRICE_SOURCE}{RST}")
     print()
 
 def main():
@@ -209,7 +275,10 @@ def main():
     ap.add_argument('--dir', default=None, help='只掃指定設定目錄')
     ap.add_argument('--watch', action='store_true', help='持續監控 (讀本機 log, 無 API 限流)')
     ap.add_argument('--interval', type=int, default=30, help='watch 刷新秒數 (預設 30)')
+    ap.add_argument('--refresh-prices', action='store_true', help='強制重抓線上定價 (平時 7 天才抓一次)')
     args = ap.parse_args()
+
+    load_pricing(force=args.refresh_prices)   # 偶爾抓線上價 (快取 7 天), 抓不到用後備表
 
     if args.watch:
         import time
