@@ -11,7 +11,7 @@
 #           .\check-quota.ps1 -Watch -Interval 30
 param(
     [switch]$Watch,
-    [int]$Interval = 15,  # watch 刷新秒數 (輪詢制: 每 tick 只查 1 個帳號, 故可較勤)
+    [int]$Interval = 60,  # watch 刷新秒數 (輪詢制: 每 tick 只查 1 個帳號 = 每分鐘只打 1 次 API)
     [int]$MaxAge = 90     # 快取秒數: 這麼短時間內已查過的帳號就讀快取, 不再打 API
 )
 

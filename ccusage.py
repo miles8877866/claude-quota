@@ -60,7 +60,8 @@ def fmt_tok(n):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--days', type=int, default=0, help='只算最近 N 天 (0=全部)')
-    ap.add_argument('--by-account', action='store_true', help='列出每帳號明細')
+    ap.add_argument('--by-account', action='store_true', help='(預設已開啟, 保留相容)')
+    ap.add_argument('--total-only', action='store_true', help='只看總計, 不列每帳號明細')
     ap.add_argument('--dir', default=None, help='只掃指定設定目錄')
     ap.add_argument('--watch', action='store_true', help='持續監控 (讀本機 log, 無 API 限流)')
     ap.add_argument('--interval', type=int, default=30, help='watch 刷新秒數 (預設 30)')
@@ -164,8 +165,8 @@ def run_once(args):
     print(DIM + '─'*64 + RST)
     print(f"  {BOLD}{'總計':<10}{'':>27}{Y}{fmt_usd(grand):>12}{RST}")
 
-    # 每帳號明細
-    if args.by_account:
+    # 每帳號明細 (預設顯示; --total-only 可關閉)
+    if not args.total_only:
         print()
         print(f"{BOLD}各帳號明細{RST}")
         print(DIM + '─'*64 + RST)
